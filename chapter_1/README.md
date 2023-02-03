@@ -10,3 +10,9 @@ This folder contains the material **Chapter 1** from "Introduction to Machine Le
   
 * Lab R scripts 
   * MLlab1-1.Rmd
+  * MLlab1-2.Rmd
+  * MLlab1-3.Rmd
+  * MLlab1-4.Rmd
+  * MLlab1-5.Rmd
+  
+* Data
