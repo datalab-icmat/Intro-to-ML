@@ -1,0 +1,105 @@
+---
+title: "LAB 1.4 ML"
+author: "DataLAb CSIC"
+date: "2/2/2023"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introducción
+
+En este lab hacemos una intro a ML.  Recordamos regresión líneal y el problema de sobreajuste. Después se discute el problema de selección de modelos en knns y concluimos con una breve ilustración de regresión logística.  Revisamos como ejemplo de aprendizaje no supervisado algunas cuestiones sobre ACPs, primero una ilustración básica y luego dos ilustraciones a proyección y compresión. Finalmente, se hace un
+revisión de optimización y validación en R.
+
+En esta tercera parte ilustramos algunos usos de optimización con R.
+
+## Información genérica sobre optimización en R
+
+Bastante apabullante... Mirad 
+<https://cran.r-project.org/web/views/Optimization.html>  
+La llamada genérica que se hace es 
+```{r ,eval=FALSE}
+%%%% optimizer(objective, constraints, bounds=NULL, types=NULL, maximum=FALSE)
+```
+
+## Ejemplos ilustrativo
+
+Por defecto viene incluida optimize. Vemos un poco de información y la
+aplicamos en un ejemplo sencillo.
+```{r ,eval=FALSE}
+help(optimize)
+f <- function(x)(print(x) - 1/3)^2
+plot(f, 0, 3)
+xmin <- optimize(f, interval = c(0, 1), tol = 0.0001)
+xmin
+```
+Hacemos nuestro ejemplo incial sencillo de máxima verosimilitud, después con la 
+log-verosimilitud. 
+```{r ,eval=FALSE}
+f <- function(x)(-(x^9*(1-x)^3)) 
+ xmin <- optimize(f, interval = c(0, 1), tol = 0.0001)
+ xmin
+f <- function(x)(-(9*log(x)+3 *log(1-x) ) ) 
+ xmin <- optimize(f, interval = c(0, 1), tol = 0.0001)
+ xmin
+```
+Hacemos ahora optimización con una función no derivable
+```{r ,eval=FALSE}
+f <- function(x) return(abs(x-2) + 2*abs(x-1))
+plot(f, 0, 3)
+xmin <- optimize(f, interval = c(0, 3), tol = 0.0001)
+xmin
+```
+optim también viene incluida por defecto. Vemos algo de información 
+y hacemos un jemeplo sencillo.
+```{r ,eval=FALSE}
+help(optim)
+f <- function(x) 2*(x[1]-1)^2 + 5*(x[2]-3)^2 + 10
+f
+r <- optim(c(1, 1), f) 
+r 
+r$convergence == 0 # TRUE if converged 
+r$par 
+r$value
+```
+
+## Una aplicación estadística (o de ML???)
+Comparamos lm con un método estándar de optimización.
+Generamos primero los datos.
+```{r ,eval=FALSE}
+n <- 100
+x1 <- rnorm(n)
+x2 <- rnorm(n)
+y <- 1 + x1 + x2 + rnorm(n)
+plot(x1,y)
+X <- cbind( rep(1,n), x1, x2 )
+X
+```
+Hacemos la regresión
+```{r ,eval=FALSE}
+r <- lm(y ~ x1 + x2)
+r
+```
+Ahora por optimización, usamos la librería de programación cuadrática quadprog. Buscamos info sobre ella
+```{r ,eval=FALSE}
+install.packages("quadprog")
+library(quadprog)
+s <- solve.QP( t(X) %*% X, t(y) %*% X, matrix(nr=3,nc=0), numeric(), 0 )
+s
+```
+Comparamos finalmente
+```{r ,eval=FALSE}
+coef(r)
+s$solution
+```
+
+
+
+

@@ -1,7 +1,7 @@
 ---
 title: "LAB 1.1 ML"
 author: "DataLab CSIC"
-date: "25/01/2023"
+date: "2/2/2023"
 output:
   word_document: default
   html_document:
@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introducción
 
-En estos labs 1.* hacemos una intro a ML.  Recordamos regresión lineal y el problema de sobreajuste. Después se discute el problema de selección de modelos en knns y concluimos con una breve ilustración de regresión logística.  Revisamos como ejemplo de aprendizaje no supervisado algunas cuestiones sobre ACPs, primero una ilustración básica y luego dos ilustraciones a proyección y compresión. Finalmente, se recuerdan conceptos de optimización en R y validación. Esta primera parte 1.1 se refiere a regresión lineal.
+En este lab hacemos una intro a ML.  Recordamos regresión lineal y el problema de sobreajuste. Después se discute el problema de selección de modelos en knns y concluimos con una breve ilustración de regresión logística.  Revisamos como ejemplo de aprendizaje no supervisado algunas cuestiones sobre ACPs, primero una ilustración básica y luego dos ilustraciones a proyección y compresión. Finalmente, se recuerdan conceptos de optimización en R y validación. Esta primera parte se refiere a regresión lineal.
 
 ## Regresión lineal simple.
 
@@ -104,7 +104,7 @@ names(Carseats)
 dim(Carseats)
 head(Carseats)
 ```
-Ajustamos un modelo lineal para las ventas. Algunas variables son cualitativas y R crea automáticamente variables dummy. Ajustamos un modelo lineal con interacciones. Price:Age
+Ajustamos un modelos lineal para las ventas. Algunas variables son cualitativas y R crea automáticamente variables dummy. Ajustamos un modelo lineal con interacciones. Price:Age
 es una abreviatura para decir que Price, Age y Price*Age están todas incluídas
 en el modelo como variables explicativas.
 ```{r ,eval=FALSE}
@@ -142,7 +142,7 @@ summary(fit2)
 fit3 <- lm(y ~ x, data=data)
 summary(fit3)
 ```
-Ahora hacemos las predicciones con los dos primeros modelos
+Ahora hacemos las predicciones con lso dos primeros modelos
 ```{r ,eval=FALSE}
 y_pred1 <- predict(fit1, newdata)
 y_pred2 <- predict(fit2, newdata)
