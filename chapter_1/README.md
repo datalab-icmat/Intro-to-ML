@@ -16,3 +16,5 @@ This folder contains the material **Chapter 1** from "Introduction to Machine Le
   * MLlab1-5.Rmd
   
 * Data
+ * t10k-images.idx1-ubyte
+ * t10k-images.idx3-ubyte
