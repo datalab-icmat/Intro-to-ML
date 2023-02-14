@@ -1,6 +1,6 @@
 ### Chapter 1. General introduction.
 
-This folder contains the material of **Chapter 1. General introduction** from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
+This folder contains the material of **Chapter 1. General introduction.** from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
 
 * Slides 
   * MLchap11d.pdf
