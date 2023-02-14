@@ -1,8 +1,13 @@
-### Chapter 0
+### Chapter 0: Introduction
 
-This folder contains the material **Chapter 0** from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
+This folder contains the material **Chapter 0. Organization** from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
 
-* Slides (MLchap0d.pdf)
-* Lab R script (MLlab0.Rmd)
-* Lab .docx file  (MLlab0.docx)
-* data0.txt 
+* Slides 
+- MLchap0d.pdf
+
+* Lab scripts 
+- MLlab0.Rmd
+- MLlab0.docx
+
+* Data
+- data0.txt 
