@@ -1,4 +1,4 @@
-Chapter 3. Classification. Basic concepts
+## Chapter 3. Classification. Basic concepts
 
 This folder contains the material of **Chapter 3. Classification. Basic concepts** from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
 
