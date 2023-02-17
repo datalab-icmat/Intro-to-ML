@@ -4,6 +4,7 @@ This folder contains the material of **Chapter 3. Classification. Basic concepts
 
 * Slides
   - clase3d.pdf
+  - casocapitulo3.pdf
 
 * Lab R scripts
   - MLlab3.Rmd
