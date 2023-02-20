@@ -9,7 +9,6 @@ This folder contains the material of **Chapter 4. Tree based algorithms for Regr
   - MLlab4.pdf
 
 * Data 
-  - train_fraud.csv
-  - test_fraud.csv
+  - fraud_data.rar
   - titanic.csv
   - prostate.data
