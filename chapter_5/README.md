@@ -4,6 +4,7 @@ This folder contains the material of **Chapter 5. Probabilistic Graphical Models
 
 * Slides
   - clases5d.pdf
+  - casocapitulo5.pdf
 
 * Lab R scripts
   - MLlab5.pdf
