@@ -6,7 +6,7 @@ This folder contains the material of **Chapter 4. Tree based algorithms for Regr
   - clases4d.pdf
 
 * Lab R scripts
-  - MLlab4.pdf
+  - MLlab4.Rmd
 
 * Data 
   - fraud_data.rar
