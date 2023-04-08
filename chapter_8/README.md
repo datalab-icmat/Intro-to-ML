@@ -9,6 +9,6 @@ This folder contains the material of __Chapter 8. Convolutional Neural Nets__ fr
 * Lab R scripts
   - MLlab72.Rmd
   
-* Jupyter notebooks (Open in colab)
+* Jupyter notebooks (Open in  Google Colab)
   - MLAB_724_colab.ipynb
   - connect_to_drive_in_COLAB.ipynb
