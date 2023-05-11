@@ -1,0 +1,165 @@
+---
+title: "LAB 1.1 ML"
+author: "DataLab CSIC"
+date: "2/2/2023"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introducción
+
+En este lab hacemos una intro a ML.  Recordamos regresión lineal y el problema de sobreajuste. Después se discute el problema de selección de modelos en knns y concluimos con una breve ilustración de regresión logística.  Revisamos como ejemplo de aprendizaje no supervisado algunas cuestiones sobre ACPs, primero una ilustración básica y luego dos ilustraciones a proyección y compresión. Finalmente, se recuerdan conceptos de optimización en R y validación. Esta primera parte se refiere a regresión lineal.
+
+## Regresión lineal simple.
+
+
+Esta primera parte es un recordatorio a regresión lineal simple que luego iremos enriqueciendo. El ejemplo proviene del libro ISLR. Comenzamos cargando las librerías MASS e ISLR. Recuerda que quizá tengas que instalarlas previamente.
+
+
+```{r ,eval=FALSE}
+library(MASS)
+library(ISLR)
+```
+Comenzamos ya el ejemplo, con los denominados datos Boston sobre casas de esa ciudad.  Cogemos algo de conocimiento sobre los datos.
+
+```{r ,eval=FALSE}
+fix(Boston)
+names(Boston)
+head(Boston)
+help(Boston)
+```
+Intentamos relacionar las variables medv (valor mediano en miles de dólares de propiedad) y porcentaje de población en el nivel socioeconómico más bajo. Después del análisis exploratorio, hacemos el ajuste. Se hace con dos formatos.
+```{r ,eval=FALSE}
+hist(Boston$medv)
+hist(Boston$lstat)
+plot(Boston$lstat,Boston$medv)
+lm.fit=lm(medv~lstat,data=Boston)
+attach(Boston)
+lm.fit=lm(medv~lstat)
+```
+Después se presentan diversos resúmenes del modelo-objeto lm.fit
+```{r ,eval=FALSE}
+lm.fit
+summary(lm.fit)
+names(lm.fit)
+coef(lm.fit)
+confint(lm.fit)
+```
+Hacemos ahora predicciones
+```{r ,eval=FALSE}
+predict(lm.fit,data.frame(lstat=(c(5,10,15))), interval="confidence")
+predict(lm.fit,data.frame(lstat=(c(5,10,15))), interval="prediction")
+```
+Representamos el modelo 
+```{r ,eval=FALSE}
+plot(lstat,medv,pch=10)
+abline(lm.fit,lwd=3,col="red")
+```
+Imprimimos varios diagnósticos del modelo
+```{r ,eval=FALSE}
+par(mfrow=c(2,2))
+plot(lm.fit)
+plot(predict(lm.fit), residuals(lm.fit))
+plot(predict(lm.fit), rstudent(lm.fit))
+```
+## Regresión lineal multiple 
+Para mejorar el ajuste incorporamos otra variable más referida a la edad de la casa. 
+```{r ,eval=FALSE}
+lm.fit=lm(medv~lstat+age,data=Boston)
+summary(lm.fit)
+```
+Y ahora ya con todas las variables. Discute cómo mejora el ajuste, la selección de variables,…
+```{r ,eval=FALSE}
+lm.fit=lm(medv~.,data=Boston)
+summary(lm.fit)
+```
+Consideramos un modelo con una interacción de términos 
+```{r ,eval=FALSE}
+summary(lm(medv~lstat*age,data=Boston))
+```
+También consideramos transformaciones no lineales de los predictores y comparamos con el modelo lineal básico. Primero un modelo cuadrático. Luego un modelo polinómico de orden 5; Finalmente un modelo con log(rm). Discute cual de los modelos que hemos visto emplearías.
+```{r ,eval=FALSE}
+lm.fit2=lm(medv~lstat+I(lstat^2))
+summary(lm.fit2)
+lm.fit=lm(medv~lstat)
+anova(lm.fit,lm.fit2)
+par(mfrow=c(2,2))
+plot(lm.fit2)
+lm.fit5=lm(medv~poly(lstat,5))
+summary(lm.fit5)
+summary(lm(medv~log(rm),data=Boston))
+```
+## Regresión con predictores cualitativos
+Ilustramos ahora un modelo con predictores cualitativos. Usamos el conjunto Carseats
+```{r ,eval=FALSE}
+fix(Carseats)
+names(Carseats)
+dim(Carseats)
+head(Carseats)
+```
+Ajustamos un modelos lineal para las ventas. Algunas variables son cualitativas y R crea automáticamente variables dummy. Ajustamos un modelo lineal con interacciones. Price:Age
+es una abreviatura para decir que Price, Age y Price*Age están todas incluídas
+en el modelo como variables explicativas.
+```{r ,eval=FALSE}
+lm.fit=lm(Sales~.+Income:Advertising+Price:Age,data=Carseats)
+summary(lm.fit)
+```
+La función contrasts muestra la codificación dummy de la variable ShelveLoc
+```{r ,eval=FALSE}
+attach(Carseats)
+contrasts(ShelveLoc)
+```
+## Un ejemplo de sobreajuste
+Ilustramos ahora un pequeño ejemplo de sobreajuste. Comenzamos creando un conjunto de 10 datos (x,y) y los representamos. Obsérvese la relación x-y. Luego creamos un data.frame con x e y
+```{r ,eval=FALSE}
+n <- 10
+x <- seq(0, 1, length.out = n)
+y <- 1.5*x - x^2 + rnorm(n, 0, 0.05)
+plot(x,y)
+data <- data.frame(x=x, y=y)
+```
+Creamos ahora nuevas x para representar después
+```{r ,eval=FALSE}
+x_new <- seq(0, 1, length.out=500)
+x_new
+newdata <- data.frame(x=x_new)
+newdata
+```
+Ajustamos un modelo cuadrático, un polinómico de grado 9 y un modelo lineal.
+```{r ,eval=FALSE}
+fit1 <- lm(y ~ x + I(x^2), data=data)
+summary(fit1)
+fit2 <- lm(y ~ x + I(x^2) + I(x^3) + I(x^4) + I(x^5) + I(x^6) + I(x^7) + I(x^8) + I(x^9), 
+           data=data)
+summary(fit2)
+fit3 <- lm(y ~ x, data=data)
+summary(fit3)
+```
+Ahora hacemos las predicciones con lso dos primeros modelos
+```{r ,eval=FALSE}
+y_pred1 <- predict(fit1, newdata)
+y_pred2 <- predict(fit2, newdata)
+ntest <- 5
+xtest <- runif(ntest)
+ytest <- 1.5*xtest - xtest^2 + rnorm(ntest, 0, 0.05)
+```
+Representamos los datos, las predicciones con los dos primeros modelos y el ajuste con el tercero
+```{r ,eval=FALSE}
+plot(data)
+lines(x_new, y_pred1, col="blue")
+lines(x_new, y_pred2, col="red")
+abline(fit3, col="purple")
+points(xtest, ytest, col="darkgreen")
+legend("bottomright", 
+       c(expression(w[0] + w[1]*x), 
+         expression(w[0] + w[1]*x + w[2]*x^2),
+         expression(w[0] + w[1]*x + w[2]*x^2 + ldots + w[9]*x^9)), 
+       lty=1, lwd=1.5, col=c("purple", "blue", "red"), inset=0.04)
+```
