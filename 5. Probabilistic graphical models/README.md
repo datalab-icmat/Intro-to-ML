@@ -7,5 +7,5 @@ This folder contains the material of **Chapter 5. Probabilistic Graphical Models
   - casocapitulo5.pdf
 
 * Lab R scripts
-  - MLlab5.pdf
+  - MLlab5.Rmd
 
