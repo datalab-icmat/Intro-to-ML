@@ -7,6 +7,8 @@ This folder contains the material of __Chapter 7. Neural Nets and deep learning_
   - clase7_2d.pdf
   - clase7_3d.pdf
   - clase7_4d.pdf
+  - Nachoconvo.pdf
+  - caso1nuria.pdf
 
 * Lab R scripts
   - MLlab71.Rmd
