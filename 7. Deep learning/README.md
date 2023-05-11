@@ -1,6 +1,6 @@
-### Chapter 7. Neural Nets and deep learning.
+### Chapter 7. Deep learning.
 
-This folder contains the material of __Chapter 7. Neural Nets and deep learning__ from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
+This folder contains the material of __Chapter 7. Deep learning__ from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
 
 * Slides
   - clase7_1d.pdf
