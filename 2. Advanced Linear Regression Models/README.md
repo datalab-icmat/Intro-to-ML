@@ -1,4 +1,4 @@
-### Chapter 2. Regression models.
+### Chapter 2. Advanced Linear Regression models.
 
 This folder contains the material of **Chapter 2. Advanced Linear Regression models** from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
 
