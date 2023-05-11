@@ -1,0 +1,342 @@
+---
+title: "MLlab-9. Aprendizaje por refuerzo"
+author: "David Ríos Insua"
+date: " "
+output: word_document
+---
+
+
+# Introducción
+
+En este lab hacemos ejemplos de aprendizaje por refuerzo con R.
+ 
+# El paquete ReinforcementLearning
+
+Usamos el paquete ReinforcementLearning con dos ejemplos adaptados de
+<https://cran.r-project.org/web/packages/ReinforcementLearning/vignettes/ReinforcementLearning.html>
+
+Emplea Q-learning, que converge a una política óptima, aunque es costoso
+computacionalmente. Para remediarlo, permite hacer RL por lotes.
+ A menudo, permite mitigar los costes de ‘exploración’ del 
+ aprendizaje puramente online. Combinado con experience replay, 
+ mejora la convergencia. 
+
+
+Cargamos la librería (una vez instalada).
+```{r, eval=FALSE}
+set.seed(0)
+library(ReinforcementLearning)
+```
+
+
+Puede usarse con problemas procedentes de:
+
+* Una función de entorno que genera dinámicamente transiciones. 
+
+* Datos recogidos de una fuente externa.
+
+En cualquier caso, han de tener la estructura
+ $(s_i, a_i, r_{i+1}, s_{i+1})$ que mencionamos en clase.
+ 
+## Ejemplo 1. Gridworld
+
+El primer ejemplo intenta enseñar a un robot a moverse en una laberinto
+con una parrilla, adaptado de Sutton-Barto.
+El agente debe navegar desde una posición aleatoria
+inicial a una posición final en una parrilla 
+$2 \times 2$ grid. 
+
+Cada celda representa un estado (la posición donde se
+encuentra el robot), con lo que hay 4 estados.
+En cada estado, el agente puede moverse en una de cuatro direcciones
+(arriba, debajo, izda, dcha), anunque debe permanecer en la rejilla.
+Hay un muro entre *s1* y *s4* que impide movimientos directos entre tales
+celdas. 
+
+
+|-----------|  
+|  s1  | s4 |   
+|  s2    s3 |   
+|-----------|  
+
+Los premios son como sigue: cada movimiento conlleva una recompensa de -1
+(recompensa negativa=pérdida);
+si el agente alcanza la meta, obtiene un premio de 10.
+
+
+Definimos primero los estados y acciones.
+```{r, eval=FALSE}
+states <- c("s1", "s2", "s3", "s4")
+states
+actions <- c("up", "down", "left", "right")
+actions
+```
+A partir de ellos definimos la función de entorno.
+que se aplica a cada par (estado, acción).
+indicando el siguiente estado y premio.
+
+La estructura general de una función de entorno es 
+```{r, eval=FALSE}
+# environment <- function(state, action) {
+#  ...
+# return(list("NextState" = newState,
+#              "Reward" = reward))
+#}
+```
+
+En nuestro ejemplo empleamos (observa que es determinista) 
+
+```{r, eval=FALSE}
+env= function (state, action) 
+{
+    next_state <- state
+    if (state == state("s1") && action == "down") 
+        next_state <- state("s2")
+    if (state == state("s2") && action == "up") 
+        next_state <- state("s1")
+    if (state == state("s2") && action == "right") 
+        next_state <- state("s3")
+    if (state == state("s3") && action == "left") 
+        next_state <- state("s2")
+    if (state == state("s3") && action == "up") 
+        next_state <- state("s4")
+    if (next_state == state("s4") && state != state("s4")) {
+        reward <- 10
+    }
+    else {
+        reward <- -1
+    }
+    out <- list(NextState = next_state, Reward = reward)
+    return(out)
+}
+```
+
+Una vez definida la función entorno, usamos \code{sampleExperience()} 
+para recoger muestras. Necesitamos especificar el número de muestras ($N$), 
+la función de entorno, el conjunto de estados $S$ y de acciones $A$. 
+Devuelve un data frame con las tuplas $(s_i, a_i, r_{i+1}, s_{i+1})$ 
+para  $i = 1, \ldots, N$. En nuestro caso, serán 1000.
+
+
+```{r, eval=FALSE}
+help("sampleExperience")
+data <- sampleExperience(N = 1000, 
+                         env = env, 
+                         states = states, 
+                         actions = actions)
+fix(data)
+```
+
+Empleamos ahora la sucesión de observaciones en *data* 
+para aprender el comportamiento óptimo del agente. 
+La rutina `ReinforcementLearning()` implanta la principal funcionalidad de la librería.
+Requiere un argumento *data*, un data frame en el que cada fila representa una tupla
+de transición de estados $(s_i, a_i, r_{i+1}, s_{i+1})$ y los nombres de las columnas de las tuplas de *data*. 
+
+Además, debemos proporcionar varios parámetros.
+
+* **alpha** Tasa de aprendizaje entre 0 y 1. 0 implica que los
+Q valores no se actualizan (no se aprende). Poniendo un valor alto como 0.9, conlleva
+aprendizaje rápido. 
+
+* **gamma** Factor descuento entre 0 y 1. Importancia de retornos futuros.
+0 implica miopía (total). Cuanto mayor es, mayor importancia damos al futuro.
+
+* **epsilon** Parámetro de exploración entre 0 y 1.
+Define el mecanismo de exploración es la búsqueda
+ $\varepsilon$-greedy, marcando la probabilidad $\varepsilon$ de seleccionar
+ una alternativa al azar. 
+ 
+* **iter** Número de iteraciones de aprendizaje por las que el agente pasa
+por todo el conjunto de datos. Iter es un entero mayor que 0.
+Por defecto es 1. Dependiendo del tamaño de los datos, puede  mejorar la convergencia 
+usar un númeor mayor de iteraciones (a costa de mayor tiempo computacional).
+
+Los pars **alpha**, **gamma**, and **epsilon** se pasan en un objeto  **control**.
+**iter** pasa directamente. 
+
+
+Usamos *alpha* 0.1,
+ *gamma* 0.5 y *epsilon* 0.1 con la función `ReinforcementLearning()`.
+ (*iter* es 1, pues lo metemos por defecto).
+ 
+
+
+```{r, eval=FALSE}
+help("ReinforcementLearning")
+# Parámetros RL 
+control <- list(alpha = 0.1, gamma = 0.5, epsilon = 0.1)
+# Ejecutamos RL 
+model <- ReinforcementLearning(data, 
+                               s = "State", 
+                               a = "Action", 
+                               r = "Reward", 
+                               s_new = "NextState", 
+                               control = control)
+```
+La función devuelve un objeto rl que puede evocarse con 
+con `computePolicy(model)` para desplegar la política.  
+`print(model)` escribe el Q valor. summary(model) da algo más de info
+
+```{r, eval=FALSE}
+# Imprime política 
+computePolicy(model)
+# Imprime función estado-acción 
+print(model)
+# MAs info del modelo
+summary(model)
+```
+
+Ahora aplicamos la política a datos no observados
+para validar el comportamiento del agente.
+
+
+```{r, eval=FALSE}
+# Datos de ejemplo 
+data_unseen <- data.frame(State = c("s1", "s2", "s1"), 
+                          stringsAsFactors = FALSE)
+data_unseen
+# Escogemos acción óptima 
+data_unseen$OptimalAction <- predict(model, data_unseen$State)
+data_unseen
+```
+
+Finalmente, podemos actualizar la política existente
+con nuevas observaciones. 
+Para ello `ReinforcementLearning()` toma un objeto `rl` como entrada adicional.
+Incluye un modo de selección $\varepsilon$-greedy.
+
+```{r, eval=FALSE}
+# Muestrea N = 1000 observaciones del entorno 
+# con seleccion psilon-greedy 
+data_new <- sampleExperience(N = 1000, 
+                             env = env, 
+                             states = states, 
+                             actions = actions, 
+                             actionSelection = "epsilon-greedy",
+                             model = model, 
+                             control = control)
+fix(data_new)
+# Actaulizamos policy 
+model_new <- ReinforcementLearning(data_new, 
+                                   s = "State", 
+                                   a = "Action", 
+                                   r = "Reward", 
+                                   s_new = "NextState", 
+                                   control = control,
+                                   model = model)
+```
+
+Mostramos cómo mejora la política.
+
+
+```{r, eval=FALSE, fig.width=5, fig.height=3}
+# Imprime resultado 
+print(model_new)
+# Muestra curva de RL 
+plot(model_new)
+```
+
+# Ejemplo 2. Tres en raya (con permiso de Maleskin)
+
+Esta parte muestra como funciona el paquete con datos 
+externos sin necesidad de modelizar la dinámica del entorno.
+
+Se emplean 406,541 estados del juego, adaptado de Sutton y Barto. 
+Los estados se describen desde la perspectiva del jugador X que es el primero en jugar.
+Si gana, se lleva  +1, 0 si empata, -1 si pierde.  
+
+El estado del juego se representa como una concatenación 
+por filas de las marcas de los jugadores en una parrilla
+ 3x3. Por ejemplo, 
+ 
+                   "......X.B"
+ 
+muestra un tablero en el que  X ha puesto su marca en el primer campo de la tercera columna mientras que B ha puesto una marca en el tercer campo de la tercera columna.
+  
+
+```{r, eval=FALSE}
+cat("......X.B")
+cat("|  .  |  .  |  .   |
+|------------------|
+|  .  |  .  |  .   |
+|------------------|
+|  X  |  .  |   B  |")
+```
+
+Usamos un conjunto de datos ya disponible para aprender las acciones óptimas
+en cada uno de los estados del tablero. Tarda un ratito...
+ 
+
+```{r, eval=FALSE}
+# Carga de datos 
+data("tictactoe")
+dim(tictactoe)
+head(tictactoe,10)
+fix(tictactoe)
+# Definimos los parámetros del RL 
+control <- list(alpha = 0.2, gamma = 0.4, epsilon = 0.1)
+# Ejecutamos RL 
+model <- ReinforcementLearning(tictactoe, s = "State", a = "Action", r = "Reward", 
+                               s_new = "NextState", iter = 1, control = control)
+# Calculamos la política óptima 
+pol <- computePolicy(model)
+# Mostramos la política (un resumen) 
+head(pol)
+# Mostramos la respuesta optima en algunos casos
+cat('.XXBB..XB XXBB.B.X. .XBB..BXX BXX...B.. ..XB..... XBXBXB... 
+     "c1"      "c5"      "c5"      "c4"      "c5"      "c9"')
+cat("|  .  |  X  |  X   |
+|------------------|
+|  B  |  B  |  .   |
+|------------------|
+|  .  |  X  |   B  |")
+cat("|  c1  |  c2  |  c3   |
+|---------------------|
+|  c4  |  c5  |  c6   |
+|---------------------|
+|  c7  |  c8  |   c9  |")
+```
+
+# Comentarios
+
+El paquete está escrito completamnete en R, por lo que no va bien en problemas
+de muy gran escala (como en visión). Se puede usar en:
+
+
+* Aprender estrategias óptimas en problemas con conjuntos limitados de estados y 
+acciones. 
+* Acelerar ajuste con experience replay.
+* Aprender con observaciones predefinidas sin necesidad de modelizar la dinámica del entorno. 
+
+No permite: 
+
+* Resolver problemas de RL de gran escala, como en visión (se deberían usar implementaciones escritas en lenguajes más rápidos)
+* Resolver problemas LR que requieran interacción en tiempo real. 
+
+Hay algunas rutinas de DeepRL en R (que llaman a Keras etc). Por ejemplo, en 
+<https://github.com/smilesun/rlR>
+
+
+Tenéis detalles de algos Q-learning en varios sitios, p.ej. en  
+<https://www.r-bloggers.com/2017/12/a-simple-intro-to-q-learning-in-r-floor-plan-navigation/> y en <https://www.datasciencecentral.com/profiles/blogs/reinforcement-learning-q-learning-implementation-using-r-part-2>
+
+# Conclusión
+
+<https://www.youtube.com/watch?v=xEPfSWk0Lsw>
+
+Hasta siempre
+
+david.rios@icmat.es
+
+@davidrinsua
+
+
+
+
+
+
+
+
+
+

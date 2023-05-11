@@ -1,14 +1,10 @@
-### Chapter 8. Unsupervised Learning.
+### Chapter 9. Reinforcement Learning.
 
-This folder contains the material of __Chapter 8. Unsupervised Learning__ from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
+This folder contains the material of __Chapter 9. Reinforcement Learning__ from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
 
 * Slides 
-  * clase8d.pptx
+  * Course_RL_Jar_Manel.pdf
   
 * Lab R scripts 
-  * MLlab8.Rmd
+  * MLlab9.Rmd
   
-* Data
-  * pollen_test_data.RData
- 
-
