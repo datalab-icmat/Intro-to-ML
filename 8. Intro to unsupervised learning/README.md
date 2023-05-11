@@ -1,4 +1,4 @@
-### Chapter 8. Intro to unsupervised Learning.
+### Chapter 8. Intro to unsupervised learning.
 
 This folder contains the material of __Chapter 8. Intro to unsupervised learning__ from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
 
