@@ -1,0 +1,389 @@
+---
+title: "MLab3. Conceptos sobre clasificación"
+author: "DataLab CSIC"
+date: " "
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introducción
+
+En este lab revisamos primero un ejemplo de LDA y QDA con los
+datos de Stock Market que vimos en el Lab1 con glms.
+Presentamos después un ejemplo completo de 
+regresión logística. Y luego un ejemplo de 
+clasificación de textos legales.
+
+
+# LDA
+
+Esta primera parte adapta un ejemplo de ILSR (chap 4). 
+Usamos los datos Smarket que hemos trabajado con glm en un lab anterior.
+Recuerda de allí parte del análisis exploratorio, que no repetimos.
+Cosntruimos el conjunto de entrenamiento como en aquel caso.
+
+```{r,eval=FALSE }
+library(ISLR)
+names(Smarket)
+dim(Smarket)
+attach(Smarket)
+train=(Year<2005)
+train
+Smarket.2005=Smarket[!train,]
+Direction.2005=Direction[!train]
+```
+Usamos la librería MASS. Intentamos predecir dirección a partir 
+de Lag1 y Lag2. Usamos lda (hacemos help(lda)). Ajustamos y representamos
+el modelo.
+```{r,eval=FALSE }
+library(MASS)
+help(lda)
+lda.fit=lda(Direction~Lag1+Lag2,data=Smarket,subset=train)
+lda.fit
+plot(lda.fit)
+```
+Ahora hacemos predicciones. Construimos la matriz de 
+confusión.
+```{r,eval=FALSE }
+lda.pred=predict(lda.fit, Smarket.2005)
+names(lda.pred)
+lda.class=lda.pred$class
+table(lda.class,Direction.2005)
+mean(lda.class==Direction.2005)
+```
+
+
+# QDA 
+
+Repetimos ahora el análisis con QDA. Los resultados son algo mejores
+que en el caso lineal.
+```{r,eval=FALSE }
+qda.fit=qda(Direction~Lag1+Lag2,data=Smarket,subset=train)
+qda.fit
+qda.class=predict(qda.fit,Smarket.2005)$class
+table(qda.class,Direction.2005)
+mean(qda.class==Direction.2005)
+```
+
+# Ejemplo completo glm 
+
+Esta parte adapata un lab de Alberto Torres. Los datos están en 
+varios sitios, por ejemplo en Kaggle.
+Intentamos predecir la supervivencia de las víctimas del Titanic a partir de las siguientes variables:
+
+  * survival: Supervivencia (0 = No; 1 = Si)
+  * pclass: Clase de pasajero (1, 2, 3)
+  * name: Nombre
+  * sex: Sexo
+  * age: Edad
+  * sibsp: Número de hermanos/esposos/as a bordo.
+  * parch: Número de padres/hijos a bordo
+  * ticket: Número de ticket
+  * fare: Coste del billete
+  * cabin: Cabina
+  * embarked: Puerto de embarque
+
+Cargamos el fichero titanic.csv del campus virtual y lo desplegamos
+para entender los datos. Empezamos viendo cuantos
+valores faltantes para cada variable.
+
+```{r, eval=FALSE}
+data <- read.csv2('titanic.csv', na.strings = "")
+data
+dim(data)
+head(data)
+colSums(is.na(data))
+```
+
+Eliminamos la variable cabin pues tiene demasiados datos faltantes.
+Comprobamos qué ha pasado con data. Para facilitar la manipulación de los
+datos cargamos dplyr. Hacemos help (dplyr). Seguimos su consejo
+de abrir la viñeta asociada y miramos la de intro.
+Decidimos eliminar las variables name y ticket pues no aportan información
+relevante.
+  
+```{r, eval=FALSE}
+data$cabin
+data$cabin <- NULL
+data$cabin
+data
+library(dplyr)
+data <- select(data, -name, -ticket)
+data
+```
+Faltaban también bastantes valores de la mediana.
+Hacemos su histograma. A falta de mejor información,
+imputamos los valores de `age` con la mediana. Fijate 
+en la sintaxis. Eliminamos 
+las filas que contengan algun NA (con función na.omit),
+ya son pocas.
+  
+```{r, eval=FALSE}
+colSums(is.na(data))
+hist(data$age)
+data$age[is.na(data$age)] <- median(data$age, na.rm = TRUE)
+colSums(is.na(data))
+data <- na.omit(data)
+dim(data)
+```
+
+Creamos un conjunto con 80% entrenamiento y 20% test, aleatoriamente.
+Recuerda antes lo que hacía sample con help(sample)
+
+```{r, eval=FALSE}
+set.seed(1234)
+help(sample)
+idx <- sample(nrow(data), replace = FALSE, size = floor(nrow(data)*0.8))
+idx
+train <- data[ idx, ]
+test  <- data[-idx, ]
+dim(train)
+dim(test)
+fix(train)
+```
+Nos quedan como variables
+ survival: Supervivencia (0 = No; 1 = Si)
+  * pclass: Clase de pasajero (1, 2, 3)
+  * sex: Sexo
+  * age: Edad
+  * sibsp: Número de hermanos/esposos/as a bordo.
+  * parch: Número de padres/hijos a bordo
+  * fare: Coste del billete
+  * embarked: Puerto de embarque Southampton, Cherburgo, Queenstown (hoy Cork)
+  
+Procedemos a usar  regresión logística con el conjunto train. Predecimos
+survived con las restantes variables. Recordad la estructura
+con help(glm).  
+Y luego la odds ratio (exp (coef) si 1 (no association),
+si > 1 mayor salida, si <1 menor salida)
+```{r, eval=FALSE}
+help(glm)
+logreg <- glm(survived ~ ., data = train, family = "binomial")
+summary(logreg)
+str(logreg)
+coefficients(logreg)
+coef(logreg)
+exp(coef(logreg))
+```
+
+ Calculamos ahora el error de test (tasa de acierto, accuracy)
+ con la regla de corte de 0.5. Después jugamos con los niveles de corte
+ para discutir el impacto del nivel de corte.
+
+```{r, eval=FALSE}
+y_pred <- predict(logreg, newdata = test, type = "response")
+y_pred
+matrizconfusion<-table((y_pred > 0.5),test$survived)
+matrizconfusion
+mean(test$survived == (y_pred > 0.5)) * 100
+(133+69)/(133+69+28+32)
+matrizconfusion[1,2]
+matrizconfusion2<-table((y_pred > 0.01),test$survived)
+matrizconfusion2
+matrizconfusion3<-table((y_pred > 0.99),test$survived)
+matrizconfusion3
+matrizconfusion4<-table((y_pred > 0.9),test$survived)
+matrizconfusion4
+```
+Ajustamos un glm regularizado.
+Previamente usamos la librería fastDummies para hacer más eficiente
+la definición de variables dummy.
+```{r, eval =FALSE}
+library(fastDummies)
+
+
+data_num <- 
+  data %>%
+    fastDummies::dummy_columns(remove_first_dummy = TRUE) %>%
+    select_if(is.numeric)
+head(data)
+head(data_num)
+```  
+  Ahora ajustamos con cv.glmnet. Definimos X,y de train y test
+  
+```{r, eval=FALSE}
+library(glmnet)
+
+X_train <- as.matrix(data_num[idx, colnames(train) != "survived"]) 
+y_train <- data_num[idx, "survived"]
+  
+X_test <- as.matrix(data_num[-idx, colnames(test) != "survived"])
+y_test <- data_num[-idx, "survived"]
+
+enet <- cv.glmnet(X_train, y_train, family = "binomial")
+```
+
+  
+Buscamos el valor óptimo de  $\lambda$ 
+  
+```{r, eval=FALSE}
+enet$lambda.min
+plot(enet)
+```
+
+Y vemos qué variables selecciona el modelo
+  
+```{r, eval=FALSE}
+coef(enet)
+```
+
+ Calcular el nuevo error de test
+
+```{r, eval=FALSE}
+y_pred <- predict(enet, newx = X_test)
+mean(y_test == (y_pred > 0.5)) * 100
+```
+
+
+
+## Clasificación de textos legales
+
+Este último trozo adapta un lab de Victor Gallego y Roi Naveiro
+de ICMAT. Primero instalamos y cargamos varias librerias
+text2vec es de PLN (tareas varias)
+tidyverse instala tidyverse suavemente <https://tidyverse.tidyverse.org/>
+plyr una cuantas funciones de ayuda para split-apply-combine
+caret un paquete para regresión y clasificación <https://cran.r-project.org/web/packages/caret/vignettes/caret.html>
+```{r , eval=FALSE}
+library(text2vec)
+library(tidyverse)
+library(plyr)
+library(caret)
+```
+En este ejercicio, entrenaremos varios clasificadores sobre texto legal.
+Cada documento se corresponde con un párrafo que puede pertenecer a una de
+cinco porsibles clases: 
+inadmitido, estimado, estimado parcialmente, desestimado, otro
+(las clases están representadas en el excel por las letras A, B, C, D, y E,
+respectivamente).
+
+Dado un nuevo texto nunca visto, queremos predecir la clase a la que pertenece.
+
+Primero descargamos y leemos los datos (están en el campus virtual).
+Pon el path adecuado con session.... Usamos un lector de ficheros
+excel (readxl, haz help(readxl)) y exploramos los datos, primeras filas,
+nombres, conteos y un ejemplo de caso.
+
+```{r , eval=FALSE}
+data <- readxl::read_xlsx('legal.xlsx')
+names(data)
+head(data)
+count(data, 'Grupo')
+data$Fallos[1]
+```
+
+Dividimos conjunto de datos en train y test con proporciones 0.8 y 0.2 respectivamente.
+En forma similar a otras. Observa la 'parametrización' empleada.
+
+```{r, eval=FALSE}
+ind_train <- sample(1:nrow(data), 0.8*nrow(data))
+ind_train
+data_train <- data[ind_train,]
+data_test <- data[-ind_train,]
+```
+Ahora preprocesamos los textos. A cada texto del train
+se le aplica:
+
+1. Reducir a minúsculas.
+2. Separar por palabras
+3. Recortar vocabulario para solo seleccionar palabras que al menos aparecen diez veces en algún documento y que además aparecen en al menos en el 0.1 % de los documentos.
+4. Vectorizar estas palabras, usando representación bag of words.
+```{r , eval=FALSE}
+
+# Definimos el preprocesado y tokenizado
+it_train = itoken(data_train$Fallos, 
+                  preprocessor = tolower, 
+                  tokenizer = word_tokenizer, 
+                  ids = data_train$idSentidosFallos, 
+                  progressbar = TRUE)
+vocab = create_vocabulary(it_train)
+vocab
+# nos quedams con palabras que al menos aparezcan 10 veces. 
+# Cada palabra deberá estar al menos en el 0.1% de documentos
+pruned_vocab = prune_vocabulary(vocab, 
+                                term_count_min = 10, 
+                                doc_proportion_min = 0.001)
+pruned_vocab
+vectorizer = vocab_vectorizer(pruned_vocab)
+
+#dtm: document term matrix
+dtm_train = create_dtm(it_train, vectorizer)
+```
+
+¿Cuál es la dimensión del train tras el preprocesado? ¿Cuántas palabras tiene el vocabulario?
+
+```{r , eval=FALSE}
+dim(dtm_train)
+```
+
+Ahora creamos el conjunto test usando el vectorizer generado con el train.
+
+```{r , eval=FALSE }
+it_test = data_test$Fallos %>% 
+  tolower %>% 
+  word_tokenizer %>% 
+  itoken(ids = data_test$idSentidosFallos, 
+         progressbar = FALSE)
+dtm_test = create_dtm(it_test, vectorizer)
+dim(dtm_test)
+```
+
+Entrenamos un modelo de regresión logística con regularización L1 usando la librería glmnet. Hacemos validación cruzada con 4 folds, del coeficiente de regularización $\lambda$. Pintamos la curva de error de clasificación frente a $\lambda$
+para sugerir el valor óptimo del hiperparámetro. 
+```{r , eval=FALSE }
+library(glmnet)
+NFOLDS = 4
+glmnet_classifier = cv.glmnet(x = dtm_train, y = data_train$Grupo, 
+                              family = 'multinomial', 
+                              # L1 penalty
+                              alpha = 1,
+                              lambda = seq(exp(-6), exp(-2), length.out = 200),
+                              type.measure = "class",
+                              # 4-fold cross-validation
+                              nfolds = NFOLDS,
+                              # high value is less accurate, but has faster training
+                              thresh = 1e-3,
+                              # again lower number of iterations for faster training
+                              maxit = 1e3)
+plot(glmnet_classifier)
+```
+
+Predecimos ahora sobre el conjunto de test. 
+
+```{r , eval=FALSE}
+preds = predict(glmnet_classifier, dtm_test, type = 'class')
+mean(preds == data_test$Grupo)
+```
+Finalmente, hacemos un modelo NB sobre el mismo texto. Para ello primero 
+creamos dataframes de train y test, convirtiendo cada cada variable predictora a un factor. 
+```{r , eval=FALSE}
+train_df = data.frame(as.matrix(dtm_train))
+train_df
+train_df = lapply(train_df, as.factor)
+train_df
+#train_df$label = data_train$Grupo
+
+test_df = data.frame(as.matrix(dtm_test))
+test_df
+test_df = lapply(test_df, as.factor)
+test_df
+#train_df$label = data_train$Grupo
+```
+
+Entrenamos el modelo sin hacer validación con la librería 
+e1071. <https://cran.r-project.org/web/packages/e1071/e1071.pdf>
+
+```{r , eval=FALSE }
+library(e1071)
+nb = naiveBayes(x = train_df, y = factor(data_train$Grupo) )
+```
+
+Predecimos sobre el test y vemos la exactitud. 
+```{r , eval=FALSE}
+preds = predict(nb, test_df, type = "class")
+mean(preds == data_test$Grupo)
+```
+
