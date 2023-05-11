@@ -1,6 +1,6 @@
-### Chapter 3. Classification. Basic concepts
+### Chapter 3. Linear classification models
 
-This folder contains the material of **Chapter 3. Classification. Basic concepts** from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
+This folder contains the material of **Chapter 3. Linear classification models** from "Introduction to Machine Learning" course held at Datalab-ICMAT. In particular, it includes:
 
 * Slides
   - clase3d.pdf
