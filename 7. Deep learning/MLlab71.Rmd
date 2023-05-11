@@ -1,0 +1,343 @@
+---
+title: "MLlab-7-1. Intro a redes neuronaless"
+author: "David Ríos Insua"
+date: " "
+output: word_document
+---
+
+
+# Introducción
+
+En este lab realizamos varios ejercicios en relación con 
+con redes neuronales. Los ejemplos son de tipo introductorio 
+para analizar los conceptos principales e introducir Keras. En los siguientes labs 
+veremos ejemplos más potentes.
+
+# Un ejemplo básico
+
+Este ejemplo es muy sencillo; adapta uno de Avinash Navlan.
+
+Usamos la librería neuralnet (que hay que instalar). Es un paquete 
+para redes multilayer con backprop y activaciones logistic o tanh.
+Tenemos info en
+<https://www.rdocumentation.org/packages/neuralnet/versions/1.44.2/topics/neuralnet>
+y 
+<https://cran.r-project.org/web/packages/neuralnet/neuralnet.pdf>.
+Al instalarla, se instala también la librería Deriv con info
+<https://cran.r-project.org/web/packages/Deriv/Deriv.pdf>
+y
+<https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/deriv>.
+Hace derivación simbólica (incluyendo algo de simplificación) que mejora los
+derivadores por defecto de R (D y deriv). Pero recordad que tenemos accesoa TensorFlow.
+Cargamos primero las librerías que necesitamos.
+
+```{r, eval=FALSE}
+library(neuralnet)
+library(Deriv)
+help(Deriv)
+```
+Mostramos un ejemplo fake sencillo. TKS y CSS son variables explicativas
+y Placed es una etiqueta 0-1. Creamos un data.frame (esta forma de cargar los datos no la hemos empleado antes, creo)
+```{r, eval=FALSE} 
+TKS=c(20,10,30,20,80,30)
+CSS=c(90,20,40,50,50,80)
+Placed=c(1,0,0,0,1,1)
+df=data.frame(TKS,CSS,Placed)
+df
+```
+Ajustamos una red neuronal para predecir Placed a partir de TKS y CSS.
+Con funciones de activación logística y tres nodos ocultos en una capa oculta.
+Hacemos antes help para entender algo más la llamada. Describimos y resumimos
+el objeto y lo dibujamos.
+```{r, eval=FALSE} 
+help(neuralnet)
+nn=neuralnet(Placed~TKS+CSS,data=df, hidden=3,act.fct = "logistic",
+                linear.output = FALSE)
+nn
+plot(nn)
+```
+Introducimos ahora un conjunto test y realizamos predicciones con 
+```{r, eval=FALSE} 
+TKS=c(30,40,85)
+CSS=c(85,50,40)
+test=data.frame(TKS,CSS)
+Predict=compute(nn,test)
+Predict$net.result
+```
+Ahora generamos las etiquetas predichas según si los niveles son mayores que 0.5
+```{r, eval=FALSE}
+prob <- Predict$net.result
+pred <- ifelse(prob>0.5, 1, 0)
+pred
+```
+
+
+# Comparamos redes neuronales y SVMs
+
+Ahora comparamos NNs con SVMs, adaptando un lab de Konstantin Klemmer.
+
+Cargamos primero las librerías que necesitamos  ggplot2, nnet, e1071 y caret. En su caso, las instalamos. Usamos en particular la librería nn, permite hacer NNs de una capa oculta y modelos log-lineales multinomiales.  En NNs puede saltarse conexiones (para añadir efectos lineales). Usa BFGS para optimización (Broyden, Fletcher, Goldfarb, Shanno).
+Documentación en 
+<https://www.rdocumentation.org/packages/nnet/versions/7.3-15/topics/nnet> y 
+<https://cran.r-project.org/web/packages/nnet/nnet.pdf>.
+```{r, eval=FALSE}
+library(ggplot2)
+library(nnet)
+library(e1071)
+library(caret)
+```
+Usaremos los datos GermanCredit (en caret y procedente de UCI ML) que exploramos.
+```{r, eval=FALSE}
+data(GermanCredit)
+help("GermanCredit")
+fix(GermanCredit)
+dim(GermanCredit)
+summary(GermanCredit)
+```
+Predeciremos la variable Class (crédito bueno o malo) a partir de las restantes con la función nn.
+Generamos conjunto de entrenamiento 80% y test 20%. Ponemos weightdecay aka ridge.
+rang incializa aleatoriamente los pesos.
+```{r, eval=FALSE}
+inTrain <- runif(nrow(GermanCredit)) < 0.8
+inTrain
+help(nnet)
+nn <- nnet(Class ~ ., data=GermanCredit[inTrain,],
+size=15, maxit=100, rang=0.1, decay=5e-4)
+summary(nn)
+```
+Hacemos predicción con el conjunto test y construimos la matriz de confusión. La desplegamos un poco más mona.
+```{r, eval=FALSE}
+pred <- predict(nn, GermanCredit[-inTrain,],
+type="class")
+cm_nn <- table(pred=pred, true=GermanCredit$Class[-inTrain])
+cm_nn
+cm_nn_plot <- as.data.frame(cm_nn)
+ggplot(data =  cm_nn_plot, mapping = aes(x = true, y = pred)) +
+  geom_tile(aes(fill = Freq), colour = "white") +
+  geom_text(aes(label = sprintf("%1.0f", Freq)), vjust = 1) +
+  scale_fill_gradient(low = "light blue", high = "dark blue") +
+  theme_bw() + theme(legend.position = "none")
+```
+Ahora calculamos, p.ej., accuracy, precision y ponemos la matriz de confusión un poco más mona,
+```{r, eval=FALSE}
+(cm_nn[1,1]+cm_nn[2,2])/(cm_nn[1,1]+cm_nn[1,2]+cm_nn[2,1]+cm_nn[2,2])
+cm_nn[1, 1]/(cm_nn[1, 1] + cm_nn[1, 2])
+```
+Empleamos SVM de e1071 para comparar. Generamos el split train-test. 
+Ajustamos svm y hacemos predicciones. Calculamos la matriz de confusión, 
+exactitud y precisión (Recordad el lab de SMVs para mayor información).
+```{r, eval=FALSE}
+inTrain <- runif(nrow(GermanCredit)) < 0.8
+model <- svm(Class ~ ., data=GermanCredit[inTrain,], type="C-classification", scale=FALSE)
+pred <- predict(model, GermanCredit[-inTrain, ])
+head(cbind(pred, GermanCredit$Class[-inTrain]))
+cm_svm <- table(pred=pred, true=GermanCredit$Class[-inTrain])
+cm_svm
+cm_svm_plot <- as.data.frame(cm_svm)
+ggplot(data =  cm_svm_plot, mapping = aes(x = true, y = pred)) +
+  geom_tile(aes(fill = Freq), colour = "white") +
+  geom_text(aes(label = sprintf("%1.0f", Freq)), vjust = 1) +
+  scale_fill_gradient(low = "light blue", high = "dark blue") +
+  theme_bw() + theme(legend.position = "none")
+sum(diag(cm_svm))/sum(sum(cm_svm))
+cm_svm[1, 1]/(cm_svm[1, 1] + cm_svm[1, 2])
+```
+Se obtienen mejores resultados con la SVM que con la NN!!! Cuestión a recordar!!!
+
+Por último realizamos la curva PROC para la SVM con la librería pROC.
+```{r, eval=FALSE}
+library(pROC)
+help(pROC)
+pred <- predict(model, GermanCredit[-inTrain,], decision.values=TRUE)
+dv <- attributes(pred)$decision.values
+plot.roc(as.numeric(GermanCredit$Class[-inTrain]), dv, xlab = "1 - Specificity", print.auc=TRUE)
+```
+
+Para concluir hay un montón de implementaciones de NNs en R. Tenéis un buen 
+resumen en la documentación de caret, por ejemplo en
+<https://topepo.github.io/caret/train-models-by-tag.html#neural-network>.
+Nosotros saltamos ya a Keras.
+
+## Un primer ejemplo con Keras 
+
+Hacemos un primer ejemplo con Keras, esencialmente para ver como 
+se carga un modelo y demás. Adaptamos un lab de Alberto Torres.
+Haremos en las próximas semanas ejemplos 
+más powerful.
+
+Cargamos primero las librerías que necesitamos, no referentes a Keras,
+en la práctica. Las hemos usado antes salvo lubridate.
+```{r, eval=FALSE}
+library(lubridate)
+help(lubridate)
+library(readr)
+library(dplyr)
+library(glmnet)
+```
+PASO 0. INSTALACION
+
+Ahora cargamos keras. Leemos sobre 
+keras en abundante documentación. Echamos un ojito en  <https://blog.rstudio.com/2017/09/05/keras-for-r/> y 
+<https://tensorflow.rstudio.com/tutorials/beginners/basic-ml/>. Más breve con 
+help(Keras). El chap 3 de Chollet y Allaire está bien. Esencialmente
+tenemos que instalarla el paquete Keras R, cargar el núcleo de keras y luego
+con install_keras() cargamos también TensorFlow (esto se hace una vez, reinicializa
+RStudio cuando lo hayas hecho lo comentas)
+```{r, eval=FALSE}
+library(keras)
+help(keras)
+#install_keras()
+```
+A. CARGA DE DATOS Y PREPROCESAMIENTO
+
+Cargamos primero los datos del fichero `oahu_min.csv` disponible en el CV. Contiene datos de múltiples piranómetros que miden la radiación solar en el aeropuerto de Hawaii, entre el 19/03/2010 y el 31/10/2011. Tras cargarlos, los exploramos. Estaréis diciendo WTF es un piranómetro. Haced wikipedia piranómetro!!!
+
+Los datos proceden de <https://data.nrel.gov/submissions/11>. Tenéis más
+info en <https://midcdmz.nrel.gov/oahu_archive/>. La ubicación se puede ver 
+en <https://midcdmz.nrel.gov/oahu_archive/instruments.html> y <https://midcdmz.nrel.gov/oahu_archive/map.jpg>.
+
+```{r, eval=FALSE}
+df <- read_csv('oahu_min.csv', 
+               locale = locale(tz = "Pacific/Honolulu"))
+dim(df)
+head(df)
+  summary(df)
+  hist(df$GH_DH5)
+  hist(df$GH_AP3)
+```
+Seleccionar las columnas `Datetime` y todas las que empiezan por "GH" (radiación "Global Horizontal") excepto "GH_AP3" (piranómetro defectuoso). Después creamos otro dataframe desplazado 1 minuto , es decir, donde la columna `Datatime` tome los valores `Datetime` + 1 minuto. Luego unimos ambos dataframes usando Datetime como clave. 
+
+```{r, eval=FALSE}
+df <- select(df, Datetime, starts_with("GH"), -GH_AP3)
+dim(df)
+head(df)
+df1 <- mutate(df, Datetime = Datetime + minutes(1))
+dim(df1)
+head(df1)
+help(inner_join)
+df2 <- inner_join(df, df1, by='Datetime', suffix=c("_t-1", "_t"))
+dim(df2)
+head(df2)
+```
+
+Por la abundancia de datos partimos en entrenamiento, validación y test.
+Creo que esto no lo habíamos hecho hasta ahora.
+  * Entrenamiento, hasta 2011-06-01
+  * Validación, de 2011-06-01 hasta 2011-09-01
+  * Test, a partir de 2011-09-01
+
+```{r, eval=FALSE}
+end_train <- as.Date("2011-06-01")
+end_train
+end_val   <- as.Date("2011-09-01")
+end_val
+
+train <- filter(df2, Datetime < end_train)
+dim(train)
+val   <- filter(df2, Datetime > end_train, Datetime < end_val)
+dim(val)
+test  <- filter(df2, Datetime > end_val)
+dim(test)
+```
+
+Creamos las matrices X e y, de la siguiente forma:
+
+  * X: todos los piranómetros en el tiempo t-1
+  * y: el piranómetro "GH_DH1" en el tiempo t
+  
+  Vamos a intentar predecir y a partir de X en un ratito. Lo hacemos en train, test y val.
+
+```{r, eval=FALSE}
+X_train <- as.matrix(select(train, ends_with("t-1")))
+y_train <- as.matrix(select(train, GH_DH1_t))
+
+head(X_train)
+X_test <- as.matrix(select(test, ends_with("t-1")))
+y_test <- as.matrix(select(test, GH_DH1_t))
+head(X_test)
+
+X_val <- as.matrix(select(val, ends_with("t-1")))
+y_val <- as.matrix(select(val, GH_DH1_t))
+head(X_val)
+```
+B. DEFINIMOS EL MODELO
+Definimos ya el model de Red Neuronal. Antes de hacerlo hacemos help
+con los comandos que vamos a emplear en este ejemplo.
+```{r, eval=FALSE}
+help("keras_model_sequential")
+help("layer_dense")
+```
+Definimos ya el modelo.  Avisamos de que empieza el modelo y añadimos las capas.
+Vamos a incluir 1 capa oculta, 128 unidades en la capa oculta, activaciones ReLU y regularización $l_2$ ($\lambda = 0.01$). La salida es lineal.
+
+```{r, eval=FALSE}
+# Inicializamos el modelo
+model <-  keras_model_sequential()
+# Añadimos las capas
+model %>% 
+    layer_dense(units = 128, activation = 'relu', input_shape = c(16),
+                kernel_regularizer = regularizer_l2(l = 0.01)) %>% 
+    layer_dense(units = 1, activation = 'linear',
+                kernel_regularizer = regularizer_l2(l = 0.01))
+summary(model)
+```
+
+B. Configuramos el modelo para el entrenamiento. Esencialmente explicamos cómo va a ser el entrenamiento de la red. Antes de hacerlo hacemos help
+con los comandos que vamos a emplear en este ejemplo.
+```{r, eval=FALSE}
+help("compile")
+```
+
+En este caso, usando como función de pérdida el MAE <https://www.tensorflow.org/api_docs/python/tf/keras/losses/MAE?hl=es-419>, el optimizador Adam <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Adam>.
+
+
+```{r, eval=FALSE}
+model %>% compile(
+  loss = "mae",
+  optimizer = optimizer_adam()
+)
+```
+
+C. Configuramos el ajuste. Antes de hacerlo hacemos help
+con los comandos que vamos a emplear en este ejemplo.
+```{r, eval=FALSE}
+help("fit")
+```
+Usamos  pues minilotes de 128, usamos conjunto de validación y 10 épocas.
+```{r, eval=FALSE}
+history <- model %>% fit(
+  X_train, y_train, 
+  epochs = 10, batch_size = 128, 
+  validation_data = list(X_val, y_val),
+  verbose = 1
+)
+```
+
+Finalmente, calculamos el error en el conjunto de test.
+
+```{r, eval=FALSE}
+evaluate(model, X_test, y_test)
+```
+
+# Comparación finalmente con Elasticnet
+
+Comparamos finalmente con un modelo ElasticNet. Ya lo hemos usado pero hacemos help(cv.glmnet)
+
+```{r, eval=FALSE}
+help(cv.glmnet)
+fit <- cv.glmnet(X_train, y_train,type.measure="mae")
+y_pred <- predict(fit, newx = X_val)
+mean(abs(y_pred - y_val))
+y_pred <- predict(fit, newx = X_test)
+mean(abs(y_pred - y_test))
+```
+
+Que sale peor.
+
+
+
+## Conclusiones
+
+En los dos siguientes labs haremos ya prácticas más intensas con Keras. Pero éste es un buen comienzo. Creo.
+
+Seguimos.
